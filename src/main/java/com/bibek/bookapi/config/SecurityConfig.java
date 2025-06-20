@@ -12,21 +12,26 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.bibek.bookapi.filter.JwtAuthFilter;
+import com.bibek.bookapi.service.CustomOauth2UserService;
 import com.bibek.bookapi.service.CuustomUserDetailsService;
+import com.bibek.bookapi.util.JwUtil;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
 @Autowired
@@ -34,6 +39,15 @@ public class SecurityConfig {
 
 @Autowired
 private JwtAuthFilter jwtAuthFilter;
+
+private final JwUtil jwUtil;
+
+private final CustomOauth2UserService oauth2UserService;
+
+public SecurityConfig(JwUtil jwUtil , CustomOauth2UserService oauth2UserService){
+    this.jwUtil             = jwUtil;
+    this.oauth2UserService = oauth2UserService;
+}
 
     
     @Bean
@@ -50,7 +64,20 @@ private JwtAuthFilter jwtAuthFilter;
                                 .requestMatchers("/user/**").hasAnyRole("ADMIN","USER")
                                 .anyRequest().authenticated()
                               )
-                              .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                              .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(
+                                userInfo -> userInfo.userService(oauth2UserService)
+                                ).successHandler((request,response,authentication) ->{
+                                    OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+                                    String email = oauthToken.getPrincipal().getAttribute("email");
+                                    String jwtToken = jwUtil.generateToken(email);
+                                    response.setContentType("application/json");
+                                    response.setCharacterEncoding("UTF-8");
+                                    response.getWriter().write("{\"token\": \"" + jwtToken + "\"}");
+
+                                })
+                                
+                                )
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
                              
 
                 

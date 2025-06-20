@@ -34,6 +34,16 @@ public class JwUtil {
                 .signWith(key,SignatureAlgorithm.HS256) // signed
                 .compact();
              }
+
+     public String generateToken(String email ){
+
+        return Jwts.builder()
+                .setSubject(email) // username taken 
+                .setIssuedAt(new Date()) // issued date
+                .setExpiration(new Date(System.currentTimeMillis()+1000*60*60)) // expirty date
+                .signWith(key,SignatureAlgorithm.HS256) // signed
+                .compact();
+             }
     
     public String extractUsername(String token){
         return Jwts.parserBuilder()

@@ -2,6 +2,7 @@ package com.bibek.bookapi.filter;
 
 import java.io.IOException;
 
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,12 +41,25 @@ public class JwtAuthFilter extends OncePerRequestFilter{
             {
                 jwt = authHeader.substring(7);
                 userName = jwtUtil.extractUsername(jwt);
+                System.out.println("Extracted username: " + userName);
+
             }
 
             if(userName != null && SecurityContextHolder.getContext().getAuthentication() == null ){
+
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+            if(jwtUtil.isTokenValid(jwt, userDetails)) {
+                System.out.println("JWT is valid. Setting authentication...");
+
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+            }
+            else{
+                        System.out.println("Invalid JWT token.");
+
+            }
                 
             }
             filterChain.doFilter(request,response);

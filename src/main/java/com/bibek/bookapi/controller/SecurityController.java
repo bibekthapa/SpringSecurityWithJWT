@@ -1,5 +1,8 @@
 package com.bibek.bookapi.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -7,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,6 +50,15 @@ public class SecurityController {
     @GetMapping("/admin/private")
     public String privateApi()  {
         return "This is a private API endpoint accessible only with authentication.";
+    }
+
+
+     @GetMapping("/secure/user")
+    public Map<String, Object> user(OAuth2AuthenticationToken auth) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", auth.getPrincipal().getAttribute("name"));
+        map.put("email", auth.getPrincipal().getAttribute("email"));
+        return map;
     }
 
     @PostMapping("/register")
